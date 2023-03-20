@@ -325,17 +325,21 @@ main (int argc, char *argv[])
    我们现在准备在节点上安装 Wi-Fi 模型，使用这四个帮助对象（YansWifiChannelHelper、YansWifiPhyHelper、WifiMacHelper、WifiHelper）和上面创建的 Ssid 对象。这些助手封装了很多默认配置，如果需要，可以使用额外的属性配置进一步定制。我们还将创建 NetDevice 容器来存储指向助手创建的 WifiNetDevice 对象的指针。
     */
     
+    // 设置各种mac属性
   NetDeviceContainer staDevices;
   mac.SetType ("ns3::StaWifiMac",
                "Ssid", SsidValue (ssid),
                "ActiveProbing", BooleanValue (false));
   staDevices = wifi.Install (phy, mac, wifiStaNodes);
 
+// 创建单个 AP，它与站点共享同一组 PHY 级属性（和信道）
   NetDeviceContainer apDevices;
   mac.SetType ("ns3::ApWifiMac",
                "Ssid", SsidValue (ssid));
   apDevices = wifi.Install (phy, mac, wifiApNode);
 
+    /**我们要添加移动模型。我们希望 STA 节点是可移动的，在边界框内四处游荡，我们希望让 AP 节点静止不动。我们使用 MobilityHelper 来简化这一过程。首先，我们实例化一个 MobilityHelper 对象并设置一些控制“位置分配器”功能的属性
+    */
   MobilityHelper mobility;
 
   mobility.SetPositionAllocator ("ns3::GridPositionAllocator",
@@ -345,7 +349,8 @@ main (int argc, char *argv[])
                                  "DeltaY", DoubleValue (10.0),
                                  "GridWidth", UintegerValue (3),
                                  "LayoutType", StringValue ("RowFirst"));
-
+    
+// 沿随机方向移动
   mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
                              "Bounds", RectangleValue (Rectangle (-50, 50, -50, 50)));
   mobility.Install (wifiStaNodes);
@@ -353,6 +358,7 @@ main (int argc, char *argv[])
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (wifiApNode);
 
+    // 安装协议栈
   InternetStackHelper stack;
   stack.Install (csmaNodes);
   stack.Install (wifiApNode);
@@ -360,14 +366,17 @@ main (int argc, char *argv[])
 
   Ipv4AddressHelper address;
 
+    // 使用网络 10.1.1.0 创建两个点对点设备所需的两个地址
   address.SetBase ("10.1.1.0", "255.255.255.0");
   Ipv4InterfaceContainer p2pInterfaces;
   p2pInterfaces = address.Assign (p2pDevices);
 
+    // 使用网络 10.1.2.0 为 CSMA 网络分配地址
   address.SetBase ("10.1.2.0", "255.255.255.0");
   Ipv4InterfaceContainer csmaInterfaces;
   csmaInterfaces = address.Assign (csmaDevices);
 
+    // 从网络 10.1.3.0 为无线网络上的 STA 设备和 AP 分配地址
   address.SetBase ("10.1.3.0", "255.255.255.0");
   address.Assign (staDevices);
   address.Assign (apDevices);
@@ -411,3 +420,5 @@ main (int argc, char *argv[])
 XAUTHORITY=/root/.Xauthority sudo。。。，从root启动firefox
 
 不支持root运行firefox参考：https://askubuntu.com/questions/1037052/running-firefox-as-root-in-a-regular-users-session-is-not-supported-xauthori
+
+由于linux中这个osm webwizard打不开，我们考虑在windows上生成sumocfg文件然后导入linux中
